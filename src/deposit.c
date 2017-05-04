@@ -56,4 +56,4 @@ void income_deposit(int aod, int pod)//Функция расчета доход�
     }
   }
  }
- } 
+
