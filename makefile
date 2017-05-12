@@ -1,20 +1,48 @@
-all: checkdirbin checkdirbuild main deposit deposit-calc
-BIN=bin
-BUILD=build
-checkdirbin:
-	@if [ ! -d $(BIN) ] ; then echo "creating $(BIN)" ; mkdir bin; fi
-	@if [ -d $(BIN) ] ; then echo "$(BIN) exists"; else echo "$(BIN) not exists, error!"; exit 1; fi
-checkdirbuild:
-	@if [ ! -d $(BUILD) ] ; then echo "creating $(BUILD)" ; mkdir build; fi
-	@if [ -d $(BUILD) ] ; then echo "$(BUILD) exists"; else echo "$(BUILD) not exists, error!"; exit 1; fi
-main:src/main.c
-	gcc -o build/main.o -c -Wall -Werror src/main.c 
+DIR=build/src build/test bin
+OBJECTS=build/src/main.o build/src/deposit.o
+CC=gcc
+CFLAGS=-c -Wall -Werror
+HEADSFILE=src/deposit.h thirdparty/ctest.h
+OBJECTS2=build/src/deposit.o build/test/deposit_test.o build/test/main.o build/test/validation_test.o
+OPTIONI=-I thirdparty -I src
+#//////////////////////////////////////////////////////
+.PHONY: all clean makedir mainprog test
 
-deposit:src/deposit.c
-	gcc -o build/deposit.o -c -Wall -Werror src/deposit.c
+#//////////////////////////////////////////////////////
+all:makedir mainprog test
 
-deposit-calc: build/main.o build/deposit.o
-	gcc build/main.o build/deposit.o -o bin/deposit-calc
+makedir:
+	mkdir -p $(DIR)
+
 
 clean:
-	rm -rf build/*.* bin/* bin/*.*
+	rm -rf build/*.* bin/* bin/*.* build/src/*.* build/test/*.*
+
+#//////////////////////////////////////////////////////
+#Main programm
+mainprog: makedir main deposit deposit-calc
+
+main:src/main.c
+	$(CC)  -o build/src/main.o $(CFLAGS) src/main.c 
+
+deposit:src/deposit.c
+	$(CC)  -o build/src/deposit.o $(CFLAGS) src/deposit.c
+
+deposit-calc: $(OBJECTS)
+	$(CC) $(OBJECTS) -o bin/deposit-calc
+
+#/////////////////////////////////////////////////////
+#Test programm
+test: makedir  deposit_test test_main validation_test deposit-calc-test
+
+deposit-calc-test: $(OBJECTS2) $(HEADSFILE)
+	$(CC) -Wall -Werror $(OBJECTS2) -o bin/deposit-calc-test
+
+deposit_test: test/deposit_test.c $(HEADSFILE)
+	$(CC) $(CFLAGS) $(OPTIONI)  test/deposit_test.c -o build/test/deposit_test.o
+
+test_main: test/main.c thirdparty/ctest.h
+	$(CC) $(CFLAGS) $(OPTIONI)  test/main.c -o build/test/main.o
+
+validation_test: test/validation_test.c $(HEADSFILE)
+	$(CC) $(CFLAGS) $(OPTIONI)  test/validation_test.c -o build/test/validation_test.o
